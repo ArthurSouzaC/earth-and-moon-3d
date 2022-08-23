@@ -1,29 +1,44 @@
 import * as Three from 'three';
+import { MeshBasicMaterial, MeshPhongMaterial, TextureLoader } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 import Orb from './Orb';
 
 const renderer = generateRenderer();
-const camera = generateCamera()
+const camera = generateCamera();
 const scene = new Three.Scene();
 const orbit = new OrbitControls(camera, renderer.domElement);
 
-const sun = new Orb(3, 0, 0, 0, '#ffffff', 2 * 10^30);
-const planet = new Orb(1, 5, 0, 5, '#ffffff', 3.3 * 10^23);
+const elements = {
+  earth: new Orb(6.3781, 0, 0, 0, new MeshPhongMaterial({ map: new TextureLoader().load(require('./assets/earth.jpg')) })),
+  moon: new Orb(1.7374, 0, 0, 0, new MeshPhongMaterial({ map: new TextureLoader().load(require('./assets/moon.jpg')) })),
+  sun: new Orb(12, 50, 0, 50, new MeshBasicMaterial({ map: new TextureLoader().load(require('./assets/sun.jpg')) })),
+}
 
+camera.position.y = 100;
+camera.position.z = 150;
 
-
-camera.position.y = 20;
-camera.position.z = 20;
 orbit.update();
 
-scene.add(new Three.GridHelper(100, 50));
-scene.add(sun)
-scene.add(planet)
+Object.values(elements).forEach(element => {
+  scene.add(element)
+});
 
+const light = new Three.PointLight( 0xffffff );
+light.position.x = 50;
+light.position.y = 50;
+light.intensity = 1.5;
+scene.add( light );
 
-function render(time: number) {
-  time *= 0.001;  // convert time to seconds
+elements['sun'].position.set(light.position.x, light.position.y, light.position.z)
+
+function render(delta: number) {
+  delta *= 0.001;
+
+  elements['earth'].rotation.y = 1.666 * delta;
+  elements['moon'].position.x = (elements['earth'].radius + 10) * Math.sin(3.708 * delta);
+  elements['moon'].position.z = (elements['earth'].radius + 10) * Math.cos(3.708 * delta);
+
   renderer.render(scene, camera);
   requestAnimationFrame(render);
 }
@@ -36,10 +51,10 @@ function generateRenderer() {
 }
 
 function generateCamera() {
-  const fov = 100;
-  const aspect = 2;
+  const fov = 45;
+  const aspect = window.innerWidth / window.innerHeight;
   const near = 0.1;
-  const far = 50;
+  const far = 500 ;
   const camera = new Three.PerspectiveCamera(fov, aspect, near, far);
   return camera;
 }
